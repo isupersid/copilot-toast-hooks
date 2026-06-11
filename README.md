@@ -1,34 +1,116 @@
 # Copilot CLI Toast Notifications (Windows)
 
-Pops a Windows toast (with the Copilot logo) whenever Copilot CLI finishes
-a turn or asks for your attention. Uses the [BurntToast] PowerShell module.
+Pops a native Windows toast — with the Copilot logo — whenever GitHub Copilot
+CLI finishes a turn or asks for your attention, so you can switch away from
+the terminal without losing track of long-running agent work.
 
-## Install
+Uses the [BurntToast] PowerShell module under the hood.
 
-1. Extract this zip anywhere.
-2. Open PowerShell in the extracted folder and run:
+---
 
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\install.ps1
-   ```
+## TL;DR — point your agent at this repo
 
-3. Restart `copilot` (the CLI).
+If you already use Copilot CLI (or any coding agent), just paste this into a
+fresh session and you're done:
 
-The installer:
-- Copies `notify.ps1` to `%USERPROFILE%\.copilot\hooks\`
-- Writes `notification-hooks.json` (backing up any existing one)
-- Copies `copilot-logo.png` to `%LOCALAPPDATA%\GitHub\CopilotCLI\`
-- Installs the `BurntToast` module for the current user if missing
+> Install the Copilot CLI toast notification hooks from
+> https://github.com/isupersid/copilot-toast-hooks by downloading the latest
+> release zip, extracting it, and running `install.ps1`. Then restart me.
 
-## Uninstall
+The agent will fetch the release, unpack it into a temp dir, and run the
+installer. No manual steps.
 
-Delete `%USERPROFILE%\.copilot\hooks\notification-hooks.json` (or restore the
-`.bak-*` file the installer created).
+## TL;DR — install it yourself
+
+```powershell
+# 1. Download + extract the latest release
+$zip = "$env:TEMP\copilot-toast-hooks.zip"
+$dir = "$env:TEMP\copilot-toast-hooks"
+Invoke-WebRequest `
+  https://github.com/isupersid/copilot-toast-hooks/releases/latest/download/copilot-toast-hooks.zip `
+  -OutFile $zip
+Expand-Archive -Force $zip $dir
+
+# 2. Run the installer
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1"
+
+# 3. Restart `copilot`
+```
+
+---
+
+## Requirements
+
+- Windows 10 / 11
+- PowerShell 5.1+ (built in) or PowerShell 7+
+- GitHub Copilot CLI (`copilot`)
+- [BurntToast] — the installer will `Install-Module BurntToast -Scope CurrentUser`
+  for you if it's missing
+
+## What gets installed
+
+| File | Destination |
+| ---- | ----------- |
+| `notify.ps1` | `%USERPROFILE%\.copilot\hooks\notify.ps1` |
+| `notification-hooks.json` | `%USERPROFILE%\.copilot\hooks\notification-hooks.json` (regenerated with your own profile path; any existing file is backed up as `.bak-<timestamp>`) |
+| `copilot-logo.png` | `%LOCALAPPDATA%\GitHub\CopilotCLI\copilot-logo.png` (used as the toast app icon) |
+
+The hooks wire two Copilot CLI events to the notifier:
+
+- **`agentStop`** — fires when Copilot finishes a turn and is waiting on you
+- **`notification`** — fires when Copilot needs your attention (e.g., a prompt)
+
+`permissionRequest` is intentionally left empty so permission prompts don't
+double-notify (the CLI already surfaces those prominently).
+
+## How it works
+
+`notify.ps1` reads a JSON payload on stdin from Copilot CLI:
+
+```json
+{ "hook_event_name": "agentStop", "session_id": "...", "message": "..." }
+```
+
+It picks a friendly title based on the event, truncates long messages, and
+calls `New-BurntToastNotification` with the Copilot logo as the app icon.
+Errors are swallowed so a flaky hook never blocks the CLI.
 
 ## Caveat
 
-Clicking the toast spawns a fresh PowerShell window — Windows falls back to the
-spawning process because the AUMID has no registered activator. Just glance at
-the toast and Alt-Tab back to your terminal.
+Clicking the toast spawns a fresh PowerShell window. Windows falls back to the
+spawning process because BurntToast's default AUMID has no registered
+activator. Just glance at the toast and Alt-Tab back to your terminal — don't
+click it.
+
+## Uninstall
+
+```powershell
+Remove-Item "$env:USERPROFILE\.copilot\hooks\notification-hooks.json"
+Remove-Item "$env:USERPROFILE\.copilot\hooks\notify.ps1"
+Remove-Item "$env:LOCALAPPDATA\GitHub\CopilotCLI\copilot-logo.png"
+```
+
+Or restore the `notification-hooks.json.bak-*` file the installer created if
+you had hooks configured previously. BurntToast can stay or be removed with
+`Uninstall-Module BurntToast`.
+
+## Troubleshooting
+
+- **No toast appears.** Run `Import-Module BurntToast; New-BurntToastNotification -Text "test"`
+  in a regular PowerShell window. If that fails, BurntToast isn't installed
+  correctly — re-run the installer or install manually.
+- **"Focus assist" / Do Not Disturb is on.** Windows silently suppresses
+  toasts. Toggle it off in *Settings → System → Notifications*.
+- **Hooks not firing.** Confirm Copilot CLI sees them with `copilot --help`
+  hook docs, or check `%USERPROFILE%\.copilot\hooks\notification-hooks.json`
+  exists and points at the right `notify.ps1` path. Restart `copilot` after
+  any change.
+- **Execution policy blocks `notify.ps1`.** The hook command uses
+  `& <path>` which respects your policy. If needed, run
+  `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+
+## License
+
+MIT. Do whatever.
 
 [BurntToast]: https://github.com/Windos/BurntToast
