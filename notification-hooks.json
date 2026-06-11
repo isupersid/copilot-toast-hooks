@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "powershell": "& C:\\Users\\super\\.copilot\\hooks\\notify.ps1 -FallbackMessage 'Copilot finished its turn — your input is needed'",
+        "timeoutSec": 10
+      }
+    ],
+    "permissionRequest": [],
+    "notification": [
+      {
+        "type": "command",
+        "powershell": "& C:\\Users\\super\\.copilot\\hooks\\notify.ps1 -FallbackMessage 'Copilot needs your attention'",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}
