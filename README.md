@@ -90,12 +90,14 @@ It picks a friendly title based on the event, truncates long messages, and
 calls `New-BurntToastNotification` with the Copilot logo as the app icon.
 Errors are swallowed so a flaky hook never blocks the CLI.
 
-## Caveat
+## Known issues
 
-Clicking the toast spawns a fresh PowerShell window. Windows falls back to the
-spawning process because BurntToast's default AUMID has no registered
-activator. Just glance at the toast and Alt-Tab back to your terminal — don't
-click it.
+- **Clicking the toast opens a stray PowerShell window.** BurntToast's default
+  AUMID has no registered activator, so Windows falls back to launching the
+  process that raised the toast — which is `powershell.exe`. There's no
+  in-toast action to fix this without registering a custom AUMID/shortcut.
+  **Workaround: don't click the toast.** Just glance at it and Alt-Tab back
+  to your terminal. You can close the stray window safely.
 
 ## Uninstall
 
