@@ -42,18 +42,33 @@ powershell -ExecutionPolicy Bypass -File "$dir\install.ps1"
 ## Requirements
 
 - Windows 10 / 11
-- PowerShell 5.1+ (built in) or PowerShell 7+
+- **PowerShell 7.0+** (`pwsh`) — required by Copilot CLI for hooks on Windows.
+  Install with `winget install Microsoft.PowerShell` and restart your terminal.
 - GitHub Copilot CLI (`copilot`)
 - [BurntToast] — the installer will `Install-Module BurntToast -Scope CurrentUser`
   for you if it's missing
+
+## Install location
+
+Per the [official Copilot CLI hooks docs][docs], user-level hooks on Windows
+live in `%USERPROFILE%\.copilot\hooks\`, or `%COPILOT_HOME%\hooks\` if the
+`COPILOT_HOME` environment variable is set. The installer in this repo
+respects `COPILOT_HOME` and writes to the correct location automatically.
+Copilot CLI reads hook config at startup, so **restart `copilot` after
+installing**.
+
+[docs]: https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks#user-level-example-for-windows
 
 ## What gets installed
 
 | File | Destination |
 | ---- | ----------- |
-| `notify.ps1` | `%USERPROFILE%\.copilot\hooks\notify.ps1` |
-| `notification-hooks.json` | `%USERPROFILE%\.copilot\hooks\notification-hooks.json` (regenerated with your own profile path; any existing file is backed up as `.bak-<timestamp>`) |
+| `notify.ps1` | `<hooks dir>\notify.ps1` |
+| `notification-hooks.json` | `<hooks dir>\notification-hooks.json` (regenerated with your own profile path; any existing file is backed up as `.bak-<timestamp>`) |
 | `copilot-logo.png` | `%LOCALAPPDATA%\GitHub\CopilotCLI\copilot-logo.png` (used as the toast app icon) |
+
+Where `<hooks dir>` is `%COPILOT_HOME%\hooks\` if `COPILOT_HOME` is set,
+otherwise `%USERPROFILE%\.copilot\hooks\` — matching the [official docs][docs].
 
 The hooks wire two Copilot CLI events to the notifier:
 

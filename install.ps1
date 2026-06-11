@@ -5,7 +5,8 @@
 $ErrorActionPreference = 'Stop'
 
 $src       = $PSScriptRoot
-$hooksDir  = Join-Path $env:USERPROFILE '.copilot\hooks'
+$hooksRoot = if ($env:COPILOT_HOME) { $env:COPILOT_HOME } else { Join-Path $env:USERPROFILE '.copilot' }
+$hooksDir  = Join-Path $hooksRoot 'hooks'
 $logoDir   = Join-Path $env:LOCALAPPDATA 'GitHub\CopilotCLI'
 $hooksJson = Join-Path $hooksDir 'notification-hooks.json'
 
